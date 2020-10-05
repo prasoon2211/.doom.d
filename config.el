@@ -9,6 +9,11 @@
   (setq mac-right-command-modifier 'hyper)
   (global-set-key (kbd "s-<backspace>") (kbd "M-DEL")) ;; Karbiner maps M-Del to s-Del and vice vesa
   )
+
+(setq user-full-name "Prasoon Shukla"
+      user-mail-address "prasoon.d.shukla@gmail.com")
+
+(setq windmove-wrap-around t)
 (setenv "PATH" (concat "/Users/prasoon.shukla/anaconda3/bin:" (getenv "PATH")))
 (setenv "PATH" (concat (getenv "PATH") ":/usr/local/bin"))
 (setq exec-path (append '("/Users/prasoon.shukla/anaconda3/bin") exec-path))
@@ -24,12 +29,7 @@
 
 (setq default-buffer-file-coding-system 'utf-8)
 (set-face-attribute 'default nil :height 140)
-;; (setq tab-always-indent t)
-;; (setq-default indent-tabs-mode nil)
-;; (setq-default tab-width 4)
-;; (setq indent-line-function 'insert-tab)
-;; (setq c-basic-offset 4)
-
+(setq tab-always-indent t)
 (mouse-wheel-mode t)
 ;; Show line-number in the mode line
 (line-number-mode 1)
@@ -60,6 +60,8 @@
 (add-hook 'prog-mode-hook 'my-lisp-prettify-symbols-hook)
 (doom-themes-org-config)
 (doom-modeline-mode)
+(setq doom-solarized-light-brighter-modeline t)
+(setq doom-solarized-light-comment-bg t)
 
 ;; ======== Block Indentation ========== ;;
 ;; Shift the selected region right if distance is postive, left if
@@ -89,27 +91,21 @@
   (interactive)
   (shift-region (- amount)))
 
-;; FIXME
-(setq-hook! 'after-init-hook company-backends '((company-files ; files & directory
-                                                 company-keywords ; keywords
-                                                 company-capf)    ; completion-at-point-functions
-                                                (company-dabbrev-code company-gtags company-etags)
-                                                (company-abbrev company-dabbrev)
-                                                ))
-;; (setq company-tooltip-align-annotations t)
-
-(company-statistics-mode)
-(company-quickhelp-mode)
+(after! company
+  (setq-default company-backends '((company-files ; files & directory
+                                             company-keywords ; keywords
+                                             company-capf)    ; completion-at-point-functions
+                                            (company-dabbrev-code company-gtags company-etags)
+                                            (company-abbrev company-dabbrev)))
+  (setq company-tooltip-align-annotations t)
+  (company-statistics-mode)
+  (company-quickhelp-mode))
 
 (use-package! helm
-  ;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
-  ;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
-  ;; cannot change `helm-command-prefix-key' once `helm-config' is loaded.
   :hook
   ;; Save current position to mark ring when jumping to a different place
   (helm-goto-line-before . helm-save-current-pos-to-mark-ring)
   :init
-  ;; (setq helm-command-prefix-key "C-c c h")
   (setq helm-gtags-ignore-case t
         helm-gtags-auto-update t
         helm-gtags-use-input-at-cursor t
@@ -142,9 +138,6 @@
   (when (executable-find "curl")
     (setq helm-google-suggest-use-curl-p t))
   (helm-gtags-mode t)
-  ;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
-  ;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
-  ;; cannot change `helm-command-prefix-key' once `helm-config' is loaded.
   (global-set-key (kbd "C-c c h") 'helm-command-prefix)
   ;; (global-unset-key (kbd "C-x c"))
   (setq helm-split-window-inside-p           t ; open helm buffer inside current window, not occupy whole other window
@@ -216,10 +209,6 @@
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets.
-(setq user-full-name "Prasoon Shukla"
-      user-mail-address "prasoon.d.shukla@gmail.com")
-
-(setq windmove-wrap-around t)
 
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
@@ -308,7 +297,7 @@
                      '(company-capf)
                      )
                                         ; (setq org-latex-create-formula-image-program 'imagemagick); install imagemagick and pdflatex
-                (setq org-latex-create-formula-image-program 'dvisvgm) ; See Org-Mode Zettel under Latex
+                (setq org-preview-latex-default-process'dvisvgm) ; See Org-Mode Zettel under Latex
                 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
                 (setq org-special-ctrl-a/e t)
                 (setq org-capture-templates
@@ -382,33 +371,23 @@
     (add-to-list 'ispell-skip-region-alist '("=" "="))
     (add-to-list 'ispell-skip-region-alist '("^#\\+BEGIN_SRC" . "^#\\+END_SRC"))))
 
-(use-package ox-clip
-  :ensure t
+(use-package! ox-clip
   :bind (:map org-mode-map (("H-k" . ox-clip-formatted-copy))))
 
-(use-package org-variable-pitch
-  :ensure t
-  :diminish org-variable-pitch-minor-mode
-  :hook (org-mode . org-variable-pitch-minor-mode)
-  :custom
-  (org-variable-pitch-fixed-font "Menlo")
-  (org-variable-pitch-fontify-headline-prefix t))
+;; (use-package! org-variable-pitch
+;;   :diminish org-variable-pitch-minor-mode
+;;   :hook (org-mode . org-variable-pitch-minor-mode)
+;;   :custom
+;;   (org-variable-pitch-fixed-font "Menlo")
+;;   (org-variable-pitch-fontify-headline-prefix t))
 
-
-(use-package org-preview-html
-  :ensure t)
-
-
-(use-package org-fragtog
-  :ensure t
+(use-package! org-fragtog
   :hook
   (org-mode . org-fragtog-mode))
 
-
 ;; Org roam
-(use-package org-roam
+(use-package! org-roam
   :commands (org-roam-insert org-roam-find-file org-roam-switch-to-buffer org-roam)
-  :ensure t
   :hook
   (after-init . org-roam-mode)
   :config
@@ -436,16 +415,15 @@
                ("s-o b" . org-roam-switch-to-buffer)
                ("s-o g" . org-roam-graph-show)
                ("s-o l" . org-cliplink)
-               ("C-c a" . org-agenda)
-               ("C-c c" . org-capture))
+               ("s-o a" . org-agenda)
+               ("s-o c" . org-capture))
               :map org-mode-map
               (("s-o I" . org-roam-insert)
                ("s-o i" . org-roam-insert-immediate)
-               ("C-c l" . org-store-link))))
+               ("s-o s l" . org-store-link))))
 
 
-(use-package org-roam-server
-  :ensure t
+(use-package! org-roam-server
   :config
   (setq org-roam-server-host "127.0.0.1"
         org-roam-server-port 8081
@@ -455,21 +433,6 @@
         org-roam-server-network-label-truncate t
         org-roam-server-network-label-truncate-length 60
         org-roam-server-network-label-wrap-length 20))
-
-;; org-download
-(use-package org-download
-  :ensure t
-  :hook
-  (dired-mode . org-download-enable)
-  :init
-  (setq-default org-download-image-dir (f-join org-directory "zettelkasten"))
-  (setq-default org-download-method 'drestivo/org-download-method)
-
-  :after org
-  :bind
-  (:map org-mode-map
-        (("s-Y" . org-download-screenshot)
-         ("s-y" . org-download-yank))))
 
 (defun drestivo/org-download-method (link)
   "This is an helper function for org-download.
@@ -498,6 +461,20 @@ https://github.com/abo-abo/org-download/commit/137c3d2aa083283a3fc853f9ecbbc0303
         (make-directory dir t))
       (message (format "Image: %s saved!" (expand-file-name filename-with-timestamp dir)))
       (expand-file-name filename-with-timestamp dir))))
+
+
+;; org-download
+(use-package! org-download
+  :hook
+  (dired-mode . org-download-enable)
+  :init
+  (setq-default org-download-image-dir (f-join org-directory "zettelkasten"))
+  (setq-default org-download-method 'drestivo/org-download-method)
+  :after org
+  :bind
+  (:map org-mode-map
+        (("s-Y" . org-download-screenshot)
+         ("s-y" . org-download-yank))))
 
 
 (defun my/org-download-attach-file (link)
@@ -579,17 +556,17 @@ then the file is moved to resources/filename/<file>"
   (zz-scroll-half-page t))
 
 
-(popwin-mode 1)
-(defun popwin-with-mode-lines (modelines)
-  (mapc (lambda (modeline)
-          (push `(,modeline :height 15 :noselect t)
-                popwin:special-display-config))
-        modelines))
-(popwin-with-mode-lines
- '("*org headlines*" "*Warnings*" "*Process List*" "*Messages*"
-   "*Backtrace*" "*Compile-Log*" "*Remember*" "*undo-tree*" "*All*"
-   "*cider-error*" "*cider-doc*"
-   "*Helm Swoop*"))
+;; (popwin-mode 1)
+;; (defun popwin-with-mode-lines (modelines)
+;;   (mapc (lambda (modeline)
+;;           (push `(,modeline :height 15 :noselect t)
+;;                 popwin:special-display-config))
+;;         modelines))
+;; (popwin-with-mode-lines
+;;  '("*org headlines*" "*Warnings*" "*Process List*" "*Messages*"
+;;    "*Backtrace*" "*Compile-Log*" "*Remember*" "*undo-tree*" "*All*"
+;;    "*cider-error*" "*cider-doc*"
+;;    "*Helm Swoop*"))
 
 (use-package! ibuffer
   :preface

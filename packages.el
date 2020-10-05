@@ -58,9 +58,16 @@
 (package! cycbuf)
 (package! phi-search)
 (package! f)
-(package! ein)
 (package! sublimity)
 (package! smartscan)
 (package! auto-compile)
 (package! org-preview-html)
-(package! org-roam-server)
+(package! org-fragtog)
+(package! org-variable-pitch)
+(package! emojify)
+(package! ox-clip)
+(package! org-download)
+(package! org-roam
+  :recipe (:host github :repo "org-roam/org-roam"))
+(package! org-roam-server
+  :recipe (:host github :repo "org-roam/org-roam-server"))

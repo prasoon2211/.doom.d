@@ -7,69 +7,43 @@
   (setq mac-command-modifier 'meta)
   (global-set-key [kp-delete] 'delete-char) ;; sets fn-delete to be right-delete
   (setq mac-right-command-modifier 'hyper)
+  (setq mac-right-option-modifier 'hyper)
   (global-set-key (kbd "s-<backspace>") (kbd "M-DEL")) ;; Karbiner maps M-Del to s-Del and vice vesa
   )
-
-(setq user-full-name "Prasoon Shukla"
-      user-mail-address "prasoon.d.shukla@gmail.com")
-
+(after! highlight-indent-guides
+  (highlight-indent-guides-auto-set-faces))
 (setq windmove-wrap-around t)
-(setenv "PATH" (concat "/Users/prasoon.shukla/anaconda3/bin:" (getenv "PATH")))
-(setenv "PATH" (concat (getenv "PATH") ":/usr/local/bin"))
-(setq exec-path (append '("/Users/prasoon.shukla/anaconda3/bin") exec-path))
 (add-to-list 'initial-frame-alist '(fullscreen . maximized))
 (prefer-coding-system       'utf-8)
 (set-default-coding-systems 'utf-8)
 (set-terminal-coding-system 'utf-8)
 (set-keyboard-coding-system 'utf-8)
-(setq locale-coding-system 'utf-8)
-(set-terminal-coding-system 'utf-8)
 (set-selection-coding-system 'utf-8)
-(delete-selection-mode 1)
-
 (setq default-buffer-file-coding-system 'utf-8)
-(set-face-attribute 'default nil :height 140)
+(setq locale-coding-system 'utf-8)
+
+(delete-selection-mode 1)
 (setq tab-always-indent t)
 (mouse-wheel-mode t)
-;; Show line-number in the mode line
-(line-number-mode 1)
-(global-hl-line-mode)
-;; Show column-number in the mode line
-(column-number-mode 1)
-(setq-default fill-column 79)
-(if window-system
- (tool-bar-mode -1))
+;; (global-hl-line-mode)
+(column-number-mode 1) ;; Show column-number in the mode line
 (menu-bar-mode -1)
 (show-paren-mode 1)
 (when window-system
-  (setq frame-title-format '(buffer-file-name "%f" ("%b"))))
+  (setq frame-title-format '(buffer-file-name "%f" ("%b")))
+  (tool-bar-mode -1))
 (setq ring-bell-function 'ignore)
-;; When on a tab, make the cursor the tab length.
-(setq-default x-stretch-cursor t)
-(defvar base-prettify-symbols-alist '(("<=" . ?≤)
-                                      (">=" . ?≥)
-                                      ("<-" . ?←)
-                                      ("->" . ?→)
-                                      ("<=" . ?⇐)
-                                      ("=>" . ?⇒)
-                                      ("lambda" . ?λ)
-                                      ))
-(defun my-lisp-prettify-symbols-hook ()
-  "Set pretty symbols for lisp modes."
-  (setq prettify-symbols-alist base-prettify-symbols-alist))
-(add-hook 'prog-mode-hook 'my-lisp-prettify-symbols-hook)
-(doom-themes-org-config)
-(doom-modeline-mode)
-(setq doom-solarized-light-brighter-modeline t)
-(setq doom-solarized-light-comment-bg t)
+(setq-default x-stretch-cursor t) ;; When on a tab, make the cursor the tab length.
 
-;; ======== Block Indentation ========== ;;
+;; -----------
+;; Block Indentation
 ;; Shift the selected region right if distance is postive, left if
 ;; negative
 (defun shift-region (distance)
   (let ((mark (mark)))
     (save-excursion
       (indent-rigidly (region-beginning) (region-end) distance)
+
       (push-mark mark t t)
       ;; Tell the command loop not to deactivate the mark
       ;; for transient mark mode
@@ -90,16 +64,44 @@
 (defun shift-left-amount (amount)
   (interactive)
   (shift-region (- amount)))
+;; -----------
+
+;; (setq-default company-backends '((company-files ; files & directory
+;;                                   company-keywords ; keywords
+;;                                   company-capf)    ; completion-at-point-functions
+;;                                  (company-dabbrev-code company-gtags company-etags)
+;;                                  (company-abbrev company-dabbrev)))
 
 (after! company
-  (setq-default company-backends '((company-files ; files & directory
-                                             company-keywords ; keywords
-                                             company-capf)    ; completion-at-point-functions
-                                            (company-dabbrev-code company-gtags company-etags)
-                                            (company-abbrev company-dabbrev)))
+  (require 'company-emoji)
   (setq company-tooltip-align-annotations t)
   (company-statistics-mode)
   (company-quickhelp-mode))
+
+;; (defadvice! add-company-backends ()
+;;   :after #'+company-init-backends-h
+;;   (add-to-list 'company-backends 'company-emoji))
+
+(defun --set-emoji-font (frame)
+  "Adjust the font settings of FRAME so Emacs can display emoji properly."
+  (if (eq system-type 'darwin)
+      ;; For NS/Cocoa
+      (set-fontset-font t 'symbol (font-spec :family "Apple Color Emoji") frame 'prepend)
+    ;; For Linux
+    (set-fontset-font t 'symbol (font-spec :family "Symbola") frame 'prepend)))
+(--set-emoji-font nil)
+(add-hook! 'after-make-frame-functions '--set-emoji-font)
+;; (global-emojify-mode)
+;; (setq emojify-display-style 'unicode)
+;; (add-to-list 'company-backends 'company-emoji)
+
+(setq doom-font (font-spec :family "Fira Code" :size 14 :weight 'semi-light)
+      doom-variable-pitch-font (font-spec :family "ETBembo" :size 15))
+(setq user-full-name "Prasoon Shukla"
+      user-mail-address "prasoon.d.shukla@gmail.com")
+
+(setq doom-leader-alt-key "H-c"
+      doom-localleader-alt-key "H-c l")
 
 (use-package! helm
   :hook
@@ -119,11 +121,8 @@
   :bind (("M-x" . helm-M-x)
          ("C-h SPC" . helm-all-mark-rings)
          ("C-x C-f" . helm-find-files)
-         ("C-h a" . helm-apropos)
          ("s-b" . helm-buffers-list)
-         ("C-x b" . helm-buffers-list)
          ("C-q" . helm-mini)
-         ("M-y" . helm-show-kill-ring)
          ("C-x C-t" . helm-for-files)
          ("s-s" . helm-projectile-ag)
          ("s-S" . helm-projectile-rg)
@@ -138,8 +137,8 @@
   (when (executable-find "curl")
     (setq helm-google-suggest-use-curl-p t))
   (helm-gtags-mode t)
-  (global-set-key (kbd "C-c c h") 'helm-command-prefix)
-  ;; (global-unset-key (kbd "C-x c"))
+  (global-set-key (kbd "C-c c h") 'helm-command-prefix) ;; helm prefix key
+  (global-unset-key (kbd "C-x c"))
   (setq helm-split-window-inside-p           t ; open helm buffer inside current window, not occupy whole other window
         helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
                                         ; Note: Use C-o to change sources.
@@ -207,96 +206,132 @@
     ("w" helm-toggle-resplit-and-swap-windows)
     ("f" helm-follow-mode)))
 
-;; Some functionality uses this to identify you, e.g. GPG configuration, email
-;; clients, file templates and snippets.
+(setq doom-theme 'doom-nord-light)
+(doom-themes-org-config)
 
-
-;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
-;; are the three important ones:
-;;
-;; + `doom-font'
-;; + `doom-variable-pitch-font'
-;; + `doom-big-font' -- used for `doom-big-font-mode'; use this for
-;;   presentations or streaming.
-;;
-;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
-;; font string. You generally only need these two:
-;; (setq doom-font (font-spec :family "monospace" :size 12 :weight 'semi-light)
-;;       doom-variable-pitch-font (font-spec :family "sans" :size 13))
-
-;; There are two ways to load a theme. Both assume the theme is installed and
-;; available. You can either set `doom-theme' or manually load a theme with the
-;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-solarized-light)
-
-;; If you use `org' and don't want your org files in the default location below,
-;; change `org-directory'. It must be set before org loads!
-(setq org-directory "~/Documents/org/")
-
-;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
-(setq display-line-numbers-type t)
+;; (setq display-line-numbers-type t)
 
+(defhydra hydra-spelling (:color amaranth)
+  "
+  ^
+  ^Spelling^          ^Errors^            ^Checker^
+  ^────────^──────────^──────^────────────^───────^───────
+  _q_ quit            _<_ previous        _c_ correction
+  ^^                  _>_ next            _d_ dictionary
+  ^^                  _f_ check           _m_ mode
+  ^^                  ^^                  ^^
+  "
+  ("q" nil)
+  ("<" flyspell-correct-previous :color pink)
+  (">" flyspell-correct-next :color pink)
+  ("c" ispell)
+  ("d" ispell-change-dictionary)
+  ("f" flyspell-buffer)
+  ("m" flyspell-mode))
 
-;; Here are some additional functions/macros that could help you configure Doom:
-;;
-;; - `load!' for loading external *.el files relative to this one
-;; - `use-package!' for configuring packages
-;; - `after!' for running code after a package has loaded
-;; - `add-load-path!' for adding directories to the `load-path', relative to
-;;   this file. Emacs searches the `load-path' when you load packages with
-;;   `require' or `use-package'.
-;; - `map!' for binding new keys
-;;
-;; To get information about any of these functions/macros, move the cursor over
-;; the highlighted symbol at press 'K' (non-evil users must press 'C-c c k').
-;; This will open documentation for it, including demos of how they are used.
-;;
-;; You can also try 'gd' (or 'C-c c d') to jump to their definition and see how
-;; they are implemented.
+(use-package! abbrev
+  :hook
+  (text-mode . abbrev-mode)
+  :custom
+  (abbrev-file-name (expand-file-name ".abbrev_defs" user-emacs-directory))
+  (save-abbrevs 'silently)
+  :config
+  (if (file-exists-p abbrev-file-name)
+      (quietly-read-abbrev-file)))
 
-
-;; Org
-;; https://zzamboni.org/post/beautifying-org-mode-in-emacs/
-;; https://lepisma.xyz/2017/10/28/ricing-org-mode/
-(use-package! org
+(use-package! flyspell
+  :defer 1
   :init
-  (setq org-directory "~/Documents/org")
+  (setq-default ispell-program-name "hunspell")
+  :bind (:map
+         flyspell-mode-map (("C-;" . flyspell-correct-wrapper)
+                            ("C-c s" . hydra-spelling/body)))
+  :custom
+  (flyspell-abbrev-p t)
+  (flyspell-issue-message-flag nil)
+  (flyspell-issue-welcome-flag nil)
+  (ispell-really-hunspell t)
+  ;; tell ispell that apostrophes are part of words
+  ;; and select Bristish dictionary
+  (ispell-local-dictionary-alist
+      `((nil "[[:alpha:]]" "[^[:alpha:]]" "[']" t ("-d" "en_GB") nil utf-8)))
+  (set-flyspell-predicate! '(markdown-mode gfm-mode)
+    #'+markdown-flyspell-word-p)
+  :preface
+  (defun +markdown-flyspell-word-p ()
+    "Return t if point is on a word that should be spell checked.
+   Return nil if on a link url, markup, html, or references."
+    (let ((faces (doom-enlist (get-text-property (point) 'face))))
+      (or (and (memq 'font-lock-comment-face faces)
+               (memq 'markdown-code-face faces))
+          (not (cl-loop with unsafe-faces = '(markdown-reference-face
+                                              markdown-url-face
+                                              markdown-markup-face
+                                              markdown-comment-face
+                                              markdown-html-attr-name-face
+                                              markdown-html-attr-value-face
+                                              markdown-html-tag-name-face
+                                              markdown-code-face)
+                        for face in faces
+                        if (memq face unsafe-faces)
+                        return t))))))
+
+(map! :after treemacs
+      "M-0" 'treemacs-select-window)
+
+;; ===================== ORG STUFF==================
+(use-package! org 
+  :init
+  (setq org-directory "~/Documents/org"
+        org-agenda-files '("~/Documents/org/someday.org" "~/Documents/org/reminders.org" "~/Documents/org/inbox.org" "~/Documents/org/tasks.org" "~/Documents/org/gcal.org")
+        org-download-screenshot-method "screencapture -i %s"
+        org-journal-date-prefix "#+TITLE: "
+        org-journal-file-format "%Y-%m-%d.org"
+        org-journal-dir "~/Documents/org/zettelkasten"
+        org-journal-date-format "%A, %d %B %Y"
+        org-todo-state-tags-triggers '(("DONE" ("ARCHIVE" . t))
+                                       ("CANCELLED" ("ARCHIVE" . t)))
+        org-indent-mode-turns-on-hiding-stars t
+        org-pretty-entities t
+        writeroom-width 70)
+
   (require 'f)
   (require 'ox-md)
-  :bind (
-         :map org-mode-map
-         (("s-e" . org-emphasize)
-          ;; ("M-'" . ispell-word)
-          ;; ("C-M-'" . ispell-complete-word)
-          ))
+  (require 'ox-gfm nil t)
+  :bind (:map org-mode-map
+         ("M-'" . ispell-word)
+         ("C-M-'" . ispell-complete-word))
   :hook
   (org-mode . writeroom-mode)
-  (org-mode . endless/org-ispell)
   (org-mode . init-org-prettify-syntax)
+  (org-mode . init-org-prettify-task-symbols)
+  ;; (advice-add #'org-set-tags-command :around #'org-set-tags-command-multiple)
   (org-mode . (lambda ()
+                (prettify-symbols-mode 1)
                 (visual-line-mode)
-                ;; (variable-pitch-mode 1)
-                ;; (org-bullets-mode 1)
-                ;; (org-indent-mode)
-                (emojify-mode)
-                (linum-mode 0)
                 (setq org-startup-indented t
-                      org-indent-indentation-per-level 1
-                      ;; org-hide-leading-stars t
+                      org-indent-indentation-per-level 2
+                      org-hide-leading-stars t
                       org-hide-emphasis-markers t
-                      org-ellipsis " ⤵ "
+                      org-src-fontify-natively t
+                      org-ellipsis " 🔽 "
                       show-trailing-whitespace nil
                       org-startup-with-inline-images t
-                      )
+                      org-M-RET-may-split-line t)
+                (setq org-archive-location (f-join org-directory "archive.org::"))
+                (org-indent-mode)
                 (setq org-edit-src-content-indentation 0)
-                (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
-                (set-face-background 'linum (face-attribute 'default :background))
-                (set (make-local-variable 'company-backends)
-                     ;; (cons 'company-capf company-backends)
-                     '(company-capf)
-                     )
-                                        ; (setq org-latex-create-formula-image-program 'imagemagick); install imagemagick and pdflatex
+                (custom-set-faces!
+                  `(org-roam-link
+                    :foreground ,(face-attribute 'link :foreground)
+                    :box (:line-width (1 . 1) :color ,(face-attribute 'link :foreground) :style released-button)
+                    :height 1.0)
+                  '(org-meta-line :height 0.7)
+                  '(org-code :height 0.8)
+                  )
+                (setq display-line-numbers nil)
+                ;; (setq org-latex-create-formula-image-program 'imagemagick); install imagemagick and pdflatex
                 (setq org-preview-latex-default-process'dvisvgm) ; See Org-Mode Zettel under Latex
                 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
                 (setq org-special-ctrl-a/e t)
@@ -311,13 +346,13 @@
                          "* NOTE %U %?" :empty-lines 1)
                         ("N" "Note with Clipboard" entry (file+headline ,(f-join org-directory "inbox.org") "Notes")
                          "* NOTE %U %?\n %c" :empty-lines 1)
+                        ("r" "Reading List" entry (file+headline ,(f-join org-directory "zettelkasten" "20200421084542-reading_list.org") "New Entries")
+                         "* %U\nType: %?\nLink: \nDescription: " :empty-lines 1)
                         ("w" "Work Item" plain (file ,(f-join org-directory "work" "notes.org"))
                          "- [ ] %?")))
-                (setq org-todo-keywords '((sequence "TODO(t)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)" "CANCELED(c)")))
-                                        ;(setq org-image-actual-width (/ (display-pixel-width) 3))
+                (setq org-todo-keywords '((sequence "TODO(t)" "NEXT(n)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)" "CANCELED(c)")))
+                ;; (setq org-image-actual-width (/ (display-pixel-width) 3))
                 (setq org-image-actual-width nil)
-                (setq org-bullets-bullet-list '("▹"))
-                ;; (setq org-bullets-bullet-list '(" "))
                 (setq header-line-format " ")
                 (setq line-spacing 0.1)
                 (setq org-list-demote-modify-bullet
@@ -340,8 +375,8 @@
                 (font-lock-add-keywords 'org-mode
                                         '(("^ *\\([+]\\) "
                                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "◦"))))))
-                (setq-local company-idle-delay 0
-                            company-minimum-prefix-length 0)))
+                (setq-local company-idle-delay 0.5
+                            company-minimum-prefix-length 1)))
   :preface
   (defun init-org-prettify-syntax ()
     "Prettify syntax with symbols."
@@ -360,26 +395,103 @@
       (cl-pushnew symbol prettify-symbols-alist :test #'equal))
     (dolist (n (number-sequence 1 8 1))
       (let ((symbol (cons (concat (make-string n ?*) " ") (-interpose '(Br . Bl) (make-list (+ 1 n) ?\s)))))
-        (cl-pushnew symbol prettify-symbols-alist :test #'equal)))
-    (prettify-symbols-mode 1))
+        (cl-pushnew symbol prettify-symbols-alist :test #'equal))))
 
-  (defun endless/org-ispell ()
-    "Configure `ispell-skip-region-alist' for `org-mode'."
-    (make-local-variable 'ispell-skip-region-alist)
-    (add-to-list 'ispell-skip-region-alist '(org-property-drawer-re))
-    (add-to-list 'ispell-skip-region-alist '("~" "~"))
-    (add-to-list 'ispell-skip-region-alist '("=" "="))
-    (add-to-list 'ispell-skip-region-alist '("^#\\+BEGIN_SRC" . "^#\\+END_SRC"))))
+  (defun init-org-prettify-task-symbols ()
+  "Prettify task list symbols."
+  (dolist (symbol '(("TODO"        . ?⚑)
+                    ("DOING"       . ?⚐)
+                    ("IN-PROGRESS" . ?⚐)
+                    ("NEXT"        . ?⚐)
+                    ("WAITING"     . ?⌚)
+                    ("SOMEDAY"     . ?⛅)
+                    ("PROJECT"     . ?📁)
+                    ("DONE"        . ?✔)
+                    ("CANCELED"    . ?✘)
+                    ("CANCELLED"   . ?✘)))
+    (cl-pushnew symbol prettify-symbols-alist :test #'equal)))
+
+  (defun org-set-tags-command-multiple (orig &optional arg)
+    (cl-letf (((symbol-function #'completing-read)
+               (lambda (prompt collection &optional predicate require-match initial-input
+                          hist def inherit-input-method)
+                 (when initial-input
+                   (setq initial-input
+                         (replace-regexp-in-string
+                          ":" ","
+                          (replace-regexp-in-string
+                           "\\`:" "" initial-input))))
+                 (let ((res (completing-read-multiple
+                             prompt collection predicate require-match initial-input
+                             hist def inherit-input-method)))
+                   (mapconcat #'identity res ":")))))
+      (let ((current-prefix-arg arg))
+        (call-interactively orig)))))
+
+(use-package! markdown-mode
+  :init
+  (custom-set-faces!
+    '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
+    '(markdown-header-face-2 :height 1.15 :weight bold       :inherit markdown-header-face)
+    '(markdown-header-face-3 :height 1.08 :weight bold       :inherit markdown-header-face)
+    '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
+    '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
+    '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
+  :bind (:map markdown-mode-map ("s-h" . dh-hydra-markdown-mode/body))
+  :hook
+  (markdown-mode . (lambda ()
+                     (visual-line-mode)
+                     (writeroom-mode)
+                     (setq writeroom-width 70)
+                     (setq display-line-numbers nil)
+                     (markdown-toggle-markup-hiding)
+                     (font-lock-add-keywords 'markdown-mode
+                                             '(("^ *\\([-]\\) "
+                                                (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
+                     (font-lock-add-keywords 'markdown-mode
+                                             '(("^ *\\([+]\\) "
+                                                (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "◦"))))))))
+  :preface
+  (defhydra dh-hydra-markdown-mode (:hint nil)
+  "
+Formatting        C-c C-s    _s_: bold          _e_: italic     _b_: blockquote   _p_: pre-formatted    _c_: code
+
+Headings          C-c C-t    _h_: automatic     _1_: h1         _2_: h2           _3_: h3               _4_: h4
+
+Lists             C-c C-x    _m_: insert item
+
+Demote/Promote    C-c C-x    _l_: promote       _r_: demote     _u_: move up      _d_: move down
+
+Links, footnotes  C-c C-a    _L_: link          _U_: uri        _F_: footnote     _W_: wiki-link      _R_: reference
+
+"
+  ("s" markdown-insert-bold)
+  ("e" markdown-insert-italic)
+  ("b" markdown-insert-blockquote :color blue)
+  ("p" markdown-insert-pre :color blue)
+  ("c" markdown-insert-code)
+
+  ("h" markdown-insert-header-dwim)
+  ("1" markdown-insert-header-atx-1)
+  ("2" markdown-insert-header-atx-2)
+  ("3" markdown-insert-header-atx-3)
+  ("4" markdown-insert-header-atx-4)
+
+  ("m" markdown-insert-list-item)
+
+  ("l" markdown-promote)
+  ("r" markdown-demote)
+  ("d" markdown-move-down)
+  ("u" markdown-move-up)
+
+  ("L" markdown-insert-link :color blue)
+  ("U" markdown-insert-uri :color blue)
+  ("F" markdown-insert-footnote :color blue)
+  ("W" markdown-insert-wiki-link :color blue)
+  ("R" markdown-insert-reference-link-dwim :color blue)))
 
 (use-package! ox-clip
   :bind (:map org-mode-map (("H-k" . ox-clip-formatted-copy))))
-
-;; (use-package! org-variable-pitch
-;;   :diminish org-variable-pitch-minor-mode
-;;   :hook (org-mode . org-variable-pitch-minor-mode)
-;;   :custom
-;;   (org-variable-pitch-fixed-font "Menlo")
-;;   (org-variable-pitch-fontify-headline-prefix t))
 
 (use-package! org-fragtog
   :hook
@@ -392,7 +504,6 @@
   (after-init . org-roam-mode)
   :config
   (setq org-roam-completion-system 'helm)
-  (require 'org-roam-protocol)
   (setq org-roam-graph-viewer "/Applications/Firefox.app/Contents/MacOS/firefox-bin")
   (setq org-roam-capture-templates
         '(("d" "default" plain (function org-roam--capture-get-point)
@@ -405,6 +516,7 @@
 
 * /Notes/\n"
           :unnarrowed t)))
+  (set-company-backend! 'org-mode '(company-emoji company-capf))
   :custom
   (org-roam-directory (f-join org-directory "zettelkasten"))
   :bind (:map org-roam-mode-map
@@ -422,6 +534,14 @@
                ("s-o i" . org-roam-insert-immediate)
                ("s-o s l" . org-store-link))))
 
+(after! (org-roam)
+  (winner-mode +1)
+  (map! :map winner-mode-map
+        "<s-right>" #'winner-redo
+        "<s-left>" #'winner-undo))
+
+(use-package! org-roam-protocol
+  :after org-protocol)
 
 (use-package! org-roam-server
   :config
@@ -535,6 +655,16 @@ then the file is moved to resources/filename/<file>"
     (org-remove-inline-images)
     (org-display-inline-images)))
 
+;; (use-package! org-variable-pitch
+;;   :diminish org-variable-pitch-minor-mode
+;;   :hook (org-mode . org-variable-pitch-minor-mode)
+;;   :custom
+;;   (org-variable-pitch-fixed-font "Menlo")
+;;   (org-variable-pitch-fontify-headline-prefix t))
+
+;; =============== ORG STUFF ==================
+
+;; Page scoll stuff
 (defun zz-scroll-half-page (direction)
   "Scrolls half page up if `direction' is non-nil, otherwise will scroll half page down."
   (let ((opos (cdr (nth 6 (posn-at-point)))))
@@ -554,7 +684,6 @@ then the file is moved to resources/filename/<file>"
   "Scrolls exactly half page up keeping cursor/point position."
   (interactive)
   (zz-scroll-half-page t))
-
 
 ;; (popwin-mode 1)
 ;; (defun popwin-with-mode-lines (modelines)
@@ -668,11 +797,13 @@ then the file is moved to resources/filename/<file>"
   (ibuffer . hydra-ibuffer-main/body)
   :bind (:map ibuffer-mode-map ("." . hydra-ibuffer-main/body))
 )
+
 ;; Keeps focus on *Occur* window, even when when target is visited via RETURN key.
 ;; See hydra-occur-dwim for more options.
 (defadvice occur-mode-goto-occurrence (after occur-mode-goto-occurrence-advice activate)
   (other-window 1)
   (hydra-occur-dwim/body))
+
 ;; Occur Hydra
 (defun occur-dwim ()
   "Call `occur' with a sane default, chosen as the thing under point or selected region"
@@ -723,12 +854,12 @@ _B_uffers (3-way)   _F_iles (3-way)                          _w_ordwise
   ("r" ediff-revision)
   ("l" ediff-regions-linewise)
   ("w" ediff-regions-wordwise))
-(global-set-key (kbd "C-c C-x d") 'hydra-ediff/body)
+(global-set-key (kbd "C-c c d") 'hydra-ediff/body)
 
 
 (use-package! ace-window
   :config
-  (global-set-key (kbd "C-c w") 'hydra-window/body)
+  (global-set-key (kbd "C-c c w") 'hydra-window/body)
   :preface
   (defhydra hydra-window ()
     "
@@ -973,7 +1104,7 @@ _vr_ reset      ^^                       ^^                 ^^
   ("." org-agenda-goto-today)
   ("gr" org-agenda-redo))
 
-(add-hook! 'org-agenda-mode-hook
+(add-hook 'org-agenda-mode-hook
           (lambda ()
             (local-set-key (kbd ".") 'hydra-org-agenda/body)))
 
@@ -1071,37 +1202,56 @@ _h_   _l_     _y_ank        _t_ype       _e_xchange-point          /,`.-'`'   ..
 
 (add-hook! 'python-mode-hook
   (lambda ()
-    (setenv "WORKON_HOME" "/Users/prasoon.shukla/anaconda3/envs")
-    (pyvenv-mode 1)
-    (pyvenv-workon "kids")
-    (defun conda-venv (venv-name)
-      "Activate a conda venv."
-      (interactive "sVirtual env name: ")
-      (pyvenv-activate (expand-file-name (concat "~/anaconda3/envs/" venv-name))))
+    (setq conda-anaconda-home (expand-file-name "~/anaconda3"))
+    (setq conda-env-home-directory (expand-file-name "~/anaconda3"))
+    (setq +format-with-lsp nil)
+    (setq +python-ipython-repl-args '("-i" "--simple-prompt" "--no-color-info"))
+    (setq +python-jupyter-repl-args '("--simple-prompt"))))
 
-    (elpy-enable)
-    (setq elpy-rpc-virtualenv-path 'default)
-    (setq python-shell-interpreter "jupyter-console"
-          python-shell-interpreter-args "--simple-prompt"
-          python-shell-prompt-detect-failure-warning nil
-          elpy-shell-echo-output nil)
-    (defun annotate-pdb ()
-      (interactive)
-      (highlight-lines-matching-regexp "import ipdb")
-      (highlight-lines-matching-regexp "ipdb.set_trace()"))
+(use-package! lsp-ui
+  :config
+  (setq lsp-ui-sideline-show-hover t
+        lsp-ui-sideline-show-hover t
+        lsp-ui-sideline-delay 3
+        lsp-ui-doc-enable t
+        lsp-ui-doc-delay 3)
+  (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
+  (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
 
-    (add-to-list 'python-shell-completion-native-disabled-interpreters
-                 "jupyter")
-    (define-key python-mode-map (kbd "C-c d") 'insert-ipdb-macro)
-    (setq blacken-line-length 120)
-    (add-hook 'python-mode-hook 'annotate-pdb)
-    (add-hook 'python-mode-hook 'blacken-mode)
 
-    ;; (setq flycheck-python-pylint-executable "/Users/prasoon.shukla/anaconda3/bin/pylint")
-    ;; (setq flycheck-pylintrc "/Users/prasoon.shukla/.pylintrc")
-    (when (require 'flycheck nil t)
-      (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-      (add-hook! 'elpy-mode-hook 'flycheck-mode))))
+;; (after! python-mode
+;;   (lambda ()
+;;     (setenv "WORKON_HOME" "/Users/prasoon.shukla/anaconda3/envs")
+;;     (pyvenv-mode 1)
+;;     (pyvenv-workon "kids")
+;;     (defun conda-venv (venv-name)
+;;       "Activate a conda venv."
+;;       (interactive "sVirtual env name: ")
+;;       (pyvenv-activate (expand-file-name (concat "~/anaconda3/envs/" venv-name))))
+
+;;     (elpy-enable)
+;;     (setq elpy-rpc-virtualenv-path 'default)
+;;     (setq python-shell-interpreter "jupyter-console"
+;;           python-shell-interpreter-args "--simple-prompt"
+;;           python-shell-prompt-detect-failure-warning nil
+;;           elpy-shell-echo-output nil)
+;;     (defun annotate-pdb ()
+;;       (interactive)
+;;       (highlight-lines-matching-regexp "import ipdb")
+;;       (highlight-lines-matching-regexp "ipdb.set_trace()"))
+
+;;     (add-to-list 'python-shell-completion-native-disabled-interpreters
+;;                  "jupyter")
+;;     (define-key python-mode-map (kbd "C-c d") 'insert-ipdb-macro)
+;;     (setq blacken-line-length 120)
+;;     (add-hook 'python-mode-hook 'annotate-pdb)
+;;     (add-hook 'python-mode-hook 'blacken-mode)
+
+;;     ;; (setq flycheck-python-pylint-executable "/Users/prasoon.shukla/anaconda3/bin/pylint")
+;;     ;; (setq flycheck-pylintrc "/Users/prasoon.shukla/.pylintrc")
+;;     (when (require 'flycheck nil t)
+;;       (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+;;       (add-hook! 'elpy-mode-hook 'flycheck-mode))))
 
 (setq path-to-ctags "/usr/local/bin/ctags") ;; <- your ctags path here
 (defun create-tags (dir-name)
@@ -1112,10 +1262,6 @@ _h_   _l_     _y_ank        _t_ype       _e_xchange-point          /,`.-'`'   ..
 )
 
 (setenv "GTAGSLABEL" "pygments")
-
-(use-package! sublimity
-  :hook
-  (after-init . (sublimity-global-mode)))
 
 (global-subword-mode 1)
 (setq select-enable-clipboard t
@@ -1235,7 +1381,7 @@ line instead."
 (global-set-key (kbd "s-S") 'helm-projectile-rg)
 (global-set-key (kbd "M-o") 'other-window)
 (global-set-key (kbd "M-*") 'pop-tag-mark)
-(global-set-key (kbd "C-c b") 'copy-file-name-to-clipboard)
+;; (global-set-key (kbd "C-c c b") 'copy-file-name-to-clipboard)
 
 (global-set-key (kbd "M-`") 'other-frame)
 (global-set-key (kbd "M-v") 'zz-scroll-half-page-up)

@@ -51,6 +51,9 @@
 ;(package! builtin-package :recipe (:branch "develop"))
 
 (package! hydra)
+(package! helm-ag)
+(package! helm-rg)
+(package! hydra)
 (package! company-quickhelp)
 (package! company-statistics)
 (package! helm-gtags)
@@ -59,6 +62,7 @@
 (package! phi-search)
 (package! f)
 (package! sublimity)
+(package! fira-code-mode)
 (package! smartscan)
 (package! auto-compile)
 (package! org-preview-html)
@@ -66,7 +70,13 @@
 (package! org-variable-pitch)
 (package! emojify)
 (package! ox-clip)
+(package! pyvenv)
+(package! org-journal)
+(package! company-emoji)
+(package! org-superstar)
 (package! org-download)
+(package! writeroom-mode)
+(package! ox-gfm)
 (package! org-roam
   :recipe (:host github :repo "org-roam/org-roam"))
 (package! org-roam-server

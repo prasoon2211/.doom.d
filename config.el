@@ -21,6 +21,8 @@
 (set-selection-coding-system 'utf-8)
 (setq default-buffer-file-coding-system 'utf-8)
 (setq locale-coding-system 'utf-8)
+;; (setq +pretty-code-enabled-modes )
+
 
 (delete-selection-mode 1)
 (setq tab-always-indent t)
@@ -104,6 +106,7 @@
       doom-localleader-alt-key "H-c l")
 
 (use-package! helm
+  :commands (helm-subr-native-elisp-p)
   :hook
   ;; Save current position to mark ring when jumping to a different place
   (helm-goto-line-before . helm-save-current-pos-to-mark-ring)
@@ -544,7 +547,10 @@ Links, footnotes  C-c C-a    _L_: link          _U_: uri        _F_: footnote   
   :after org-protocol)
 
 (use-package! org-roam-server
-  :config
+  :commands org-roam-server-mode
+  :hook (org-roam-mode . org-roam-server-mode)
+  :demand
+  :init
   (setq org-roam-server-host "127.0.0.1"
         org-roam-server-port 8081
         org-roam-server-export-inline-images t
@@ -553,6 +559,7 @@ Links, footnotes  C-c C-a    _L_: link          _U_: uri        _F_: footnote   
         org-roam-server-network-label-truncate t
         org-roam-server-network-label-truncate-length 60
         org-roam-server-network-label-wrap-length 20))
+
 
 (defun drestivo/org-download-method (link)
   "This is an helper function for org-download.
@@ -1200,66 +1207,68 @@ _h_   _l_     _y_ank        _t_ype       _e_xchange-point          /,`.-'`'   ..
     ("x" ein:notebook-close :exit t)))
 
 
-(add-hook! 'python-mode-hook
-  (lambda ()
-    (setq conda-anaconda-home (expand-file-name "~/anaconda3"))
-    (setq conda-env-home-directory (expand-file-name "~/anaconda3"))
-    (setq +format-with-lsp nil)
-    (setq +python-ipython-repl-args '("-i" "--simple-prompt" "--no-color-info"))
-    (setq +python-jupyter-repl-args '("--simple-prompt"))))
-
 (use-package! lsp-ui
+  :bind (:map lsp-ui-mode-map
+         ([remap xref-find-definitions] . lsp-ui-peek-find-definitions)
+         ([remap xref-find-references] . lsp-ui-peek-find-references)
+         ("C-c u" . lsp-ui-imenu)
+         ("C-c d" . lsp-describe-thing-at-point))
   :config
-  (setq lsp-ui-sideline-show-hover t
-        lsp-ui-sideline-show-hover t
-        lsp-ui-sideline-delay 3
+  (setq lsp-ui-sideline-delay 1
+        lsp-ui-doc-delay 3
         lsp-ui-doc-enable t
-        lsp-ui-doc-delay 3)
-  (define-key lsp-ui-mode-map [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
-  (define-key lsp-ui-mode-map [remap xref-find-references] #'lsp-ui-peek-find-references))
+        lsp-ui-sideline-show-hover t
+        lsp-ui-flycheck-enable t
+        lsp-ui-flycheck-list-position 'right
+        lsp-ui-flycheck-live-reporting t
+        lsp-ui-peek-enable t
+        lsp-ui-peek-list-width 60
+        lsp-ui-peek-peek-height 25
+        lsp-ui-doc-header t
+        lsp-ui-doc-include-signature t
+        lsp-ui-doc-position 'at-point
+        lsp-ui-doc-use-childframe nil
+        ;; lsp-ui-doc-use-webkit nil
+        ;; lsp-ui-doc-border (face-foreground 'default)
+        lsp-ui-sideline-enable t
+        lsp-ui-sideline-ignore-duplicate t
+        lsp-ui-sideline-show-code-actions t
+        lsp-auto-guess-root nil)
+  (add-to-list 'lsp-ui-doc-frame-parameters '(right-fringe . 8))
+  ;; `C-g'to close doc
+  (advice-add #'keyboard-quit :before #'lsp-ui-doc-hide)
+  ;; Reset `lsp-ui-doc-background' after loading theme
+  ;; (add-hook 'after-load-theme-hook
+  ;;      (lambda ()
+  ;;        (setq lsp-ui-doc-border (face-foreground 'default))
+  ;;        (set-face-background 'lsp-ui-doc-background
+  ;;                             (face-background 'tooltip))))
+  ;; WORKAROUND Hide mode-line of the lsp-ui-imenu buffer
+  ;; @see https://github.com/emacs-lsp/lsp-ui/issues/243
+  (defadvice lsp-ui-imenu (after hide-lsp-ui-imenu-mode-line activate) (setq mode-line-format nil)))
+
+(add-hook 'python-mode-hook
+          (lambda ()
+              (setq conda-anaconda-home (expand-file-name "~/anaconda3"))
+              (setq conda-env-home-directory (expand-file-name "~/anaconda3"))
+              (setq +format-with-lsp nil)
+              (setq +python-ipython-repl-args '("-i" "--simple-prompt" "--no-color-info"))
+              (setq +python-jupyter-repl-args '("--simple-prompt"))
+              (setenv "WORKON_HOME" "/Users/prasoon.shukla/anaconda3/envs")
+              (add-hook 'python-mode-hook 'blacken-mode)
+              (setq blacken-line-length 120)
+              (conda-env-activate "usficommons")
+              ;; (prettify-symbols-mode -1)
+              (setq +pretty-code-symbols-alist '(python-mode nil))))
+(after! python
+  (set-pretty-symbols! 'python-mode nil))
 
 
-;; (after! python-mode
-;;   (lambda ()
-;;     (setenv "WORKON_HOME" "/Users/prasoon.shukla/anaconda3/envs")
-;;     (pyvenv-mode 1)
-;;     (pyvenv-workon "kids")
-;;     (defun conda-venv (venv-name)
-;;       "Activate a conda venv."
-;;       (interactive "sVirtual env name: ")
-;;       (pyvenv-activate (expand-file-name (concat "~/anaconda3/envs/" venv-name))))
-
-;;     (elpy-enable)
-;;     (setq elpy-rpc-virtualenv-path 'default)
-;;     (setq python-shell-interpreter "jupyter-console"
-;;           python-shell-interpreter-args "--simple-prompt"
-;;           python-shell-prompt-detect-failure-warning nil
-;;           elpy-shell-echo-output nil)
-;;     (defun annotate-pdb ()
-;;       (interactive)
-;;       (highlight-lines-matching-regexp "import ipdb")
-;;       (highlight-lines-matching-regexp "ipdb.set_trace()"))
-
-;;     (add-to-list 'python-shell-completion-native-disabled-interpreters
-;;                  "jupyter")
-;;     (define-key python-mode-map (kbd "C-c d") 'insert-ipdb-macro)
-;;     (setq blacken-line-length 120)
-;;     (add-hook 'python-mode-hook 'annotate-pdb)
-;;     (add-hook 'python-mode-hook 'blacken-mode)
-
-;;     ;; (setq flycheck-python-pylint-executable "/Users/prasoon.shukla/anaconda3/bin/pylint")
-;;     ;; (setq flycheck-pylintrc "/Users/prasoon.shukla/.pylintrc")
-;;     (when (require 'flycheck nil t)
-;;       (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-;;       (add-hook! 'elpy-mode-hook 'flycheck-mode))))
-
-(setq path-to-ctags "/usr/local/bin/ctags") ;; <- your ctags path here
-(defun create-tags (dir-name)
-    "Create tags file."
-  (interactive "DDirectory: ")
-  (shell-command
-   (format "find %s -type f -iname \"*\" | etags -" path-to-ctags (directory-file-name dir-name)))
-)
+             ;; (setq flycheck-python-pylint-executable "/Users/prasoon.shukla/anaconda3/bin/pylint")
+             ;; (setq flycheck-pylintrc "/Users/prasoon.shukla/.pylintrc")
+             ;; (when (require 'flycheck nil t)
+             ;;   (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+             ;;   (add-hook! 'elpy-mode-hook 'flycheck-mode))))
 
 (setenv "GTAGSLABEL" "pygments")
 

@@ -10,8 +10,6 @@
   (setq mac-right-option-modifier 'hyper)
   (global-set-key (kbd "s-<backspace>") (kbd "M-DEL")) ;; Karbiner maps M-Del to s-Del and vice vesa
   )
-(after! highlight-indent-guides
-  (highlight-indent-guides-auto-set-faces))
 (setq windmove-wrap-around t)
 (add-to-list 'initial-frame-alist '(fullscreen . maximized))
 (prefer-coding-system       'utf-8)
@@ -80,6 +78,16 @@
   (company-statistics-mode)
   (company-quickhelp-mode))
 
+(after! flycheck
+  (define-key flycheck-mode-map flycheck-keymap-prefix nil)
+  (setq flycheck-keymap-prefix (kbd "C-c #"))
+  (define-key flycheck-mode-map flycheck-keymap-prefix
+    flycheck-command-map))
+
+(after! flyspell
+  (map! :map flyspell-mode-map
+         "C-M-i" nil))
+
 ;; (defadvice! add-company-backends ()
 ;;   :after #'+company-init-backends-h
 ;;   (add-to-list 'company-backends 'company-emoji))
@@ -104,6 +112,8 @@
 
 (setq doom-leader-alt-key "H-c"
       doom-localleader-alt-key "H-c l")
+
+(require 'smartparens-config)
 
 (use-package! helm
   :commands (helm-subr-native-elisp-p)
@@ -293,8 +303,8 @@
         org-journal-file-format "%Y-%m-%d.org"
         org-journal-dir "~/Documents/org/zettelkasten"
         org-journal-date-format "%A, %d %B %Y"
-        org-todo-state-tags-triggers '(("DONE" ("ARCHIVE" . t))
-                                       ("CANCELLED" ("ARCHIVE" . t)))
+        ;; org-todo-state-tags-triggers '(("DONE" ("ARCHIVE" . t))
+        ;;                                ("CANCELLED" ("ARCHIVE" . t)))
         org-indent-mode-turns-on-hiding-stars t
         org-pretty-entities t
         writeroom-width 70)
@@ -302,9 +312,14 @@
   (require 'f)
   (require 'ox-md)
   (require 'ox-gfm nil t)
+
   :bind (:map org-mode-map
          ("M-'" . ispell-word)
-         ("C-M-'" . ispell-complete-word))
+         ("C-M-'" . ispell-complete-word)
+         ("C-c c n" . now)
+         ("<C-s-return>" . insert-next-heading-and-timestamp)
+         ("C-c h" . org-toggle-heading)
+         ("C-'" . nil))
   :hook
   (org-mode . writeroom-mode)
   (org-mode . init-org-prettify-syntax)
@@ -325,13 +340,15 @@
                 (setq org-archive-location (f-join org-directory "archive.org::"))
                 (org-indent-mode)
                 (setq org-edit-src-content-indentation 0)
+                ;; :box (:line-width (1 . 1) :color ,(face-attribute 'link :foreground) :style released-button)
                 (custom-set-faces!
                   `(org-roam-link
                     :foreground ,(face-attribute 'link :foreground)
-                    :box (:line-width (1 . 1) :color ,(face-attribute 'link :foreground) :style released-button)
+                    :box (:color ,(face-attribute 'link :foreground) :style released-button)
                     :height 1.0)
                   '(org-meta-line :height 0.7)
                   '(org-code :height 0.8)
+                  '(org-verbatim :height 0.8)
                   )
                 (setq display-line-numbers nil)
                 ;; (setq org-latex-create-formula-image-program 'imagemagick); install imagemagick and pdflatex
@@ -429,7 +446,20 @@
                              hist def inherit-input-method)))
                    (mapconcat #'identity res ":")))))
       (let ((current-prefix-arg arg))
-        (call-interactively orig)))))
+        (call-interactively orig))))
+  (defun now ()
+    "Insert HH:MM string"
+    (interactive)
+    (insert (format-time-string "%k:%M")))
+
+  (defun insert-next-heading-and-timestamp ()
+    "Goto previous heading and insert a new heading with current timestamp"
+    (interactive)
+    (org-previous-visible-heading 1)
+    (org-meta-return)
+    (now)
+    (newline)))
+
 
 (use-package! markdown-mode
   :init
@@ -531,7 +561,9 @@ Links, footnotes  C-c C-a    _L_: link          _U_: uri        _F_: footnote   
                ("s-o g" . org-roam-graph-show)
                ("s-o l" . org-cliplink)
                ("s-o a" . org-agenda)
-               ("s-o c" . org-capture))
+               ("s-o c" . org-capture)
+               ;; ("C-M-i" . company-capf)
+               )
               :map org-mode-map
               (("s-o I" . org-roam-insert)
                ("s-o i" . org-roam-insert-immediate)
@@ -543,12 +575,19 @@ Links, footnotes  C-c C-a    _L_: link          _U_: uri        _F_: footnote   
         "<s-right>" #'winner-redo
         "<s-left>" #'winner-undo))
 
+(after! (company org-roam)
+  (map! :map org-mode-map
+        "C-M-i" #'company-capf)
+  )
+
 (use-package! org-roam-protocol
   :after org-protocol)
 
 (use-package! org-roam-server
   :commands org-roam-server-mode
-  :hook (org-roam-mode . org-roam-server-mode)
+  ;; uncomment to run server on startup
+  ;; to manually start, first switch off smartparens (smartparens-global-mode)
+  ;; :hook (org-roam-mode . org-roam-server-mode)
   :demand
   :init
   (setq org-roam-server-host "127.0.0.1"
@@ -1256,19 +1295,24 @@ _h_   _l_     _y_ank        _t_ype       _e_xchange-point          /,`.-'`'   ..
               (setq +python-jupyter-repl-args '("--simple-prompt"))
               (setenv "WORKON_HOME" "/Users/prasoon.shukla/anaconda3/envs")
               (add-hook 'python-mode-hook 'blacken-mode)
-              (setq blacken-line-length 120)
+              (setq blacken-line-length 88)
               (conda-env-activate "usficommons")
               ;; (prettify-symbols-mode -1)
               (setq +pretty-code-symbols-alist '(python-mode nil))))
 (after! python
   (set-pretty-symbols! 'python-mode nil))
 
+(add-hook 'dart-mode-hook
+          (lambda ()
+            (set-pretty-symbols! 'dart-mode nil)
+            (setq hover-hot-reload-on-save t)
+            (map! :map dart-mode-map
+                  "C-M-x" #'flutter-run-or-hot-reload
+                  "C-M-z" #'hover-run-or-hot-reload)))
 
-             ;; (setq flycheck-python-pylint-executable "/Users/prasoon.shukla/anaconda3/bin/pylint")
-             ;; (setq flycheck-pylintrc "/Users/prasoon.shukla/.pylintrc")
-             ;; (when (require 'flycheck nil t)
-             ;;   (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
-             ;;   (add-hook! 'elpy-mode-hook 'flycheck-mode))))
+;; (add-hook 'flutter-mode-hook
+;;           (lambda ()
+;;             (set-pretty-symbols! 'dart-mode nil)))
 
 (setenv "GTAGSLABEL" "pygments")
 
@@ -1332,10 +1376,10 @@ line instead."
 (setq magit-last-seen-setup-instructions "1.4.0")
 
 (fset 'switch-default-buffer
-   [?\C-x ?b return])
+      [?\C-x ?b return])
 
 (fset 'delete-whitespace-around-point
-   "\334 ")
+      "\334 ")
 
 (fset 'insert-ipdb-macro
       (lambda (&optional arg)
@@ -1362,7 +1406,8 @@ line instead."
 (global-set-key (kbd "s-k") 'kill-this-buffer)
 (global-set-key (kbd "s-K") 'kill-buffer-and-close-window)
 ;; (global-set-key (kbd "s-.") 'helm-etags-select)
-(define-key projectile-mode-map (kbd "C-o") 'helm-projectile-find-file)
+(define-key projectile-mode-map
+  (kbd "C-o") 'helm-projectile-find-file)
 (define-key projectile-mode-map (kbd "s-p") 'hydra-projectile/body)
 (global-set-key (kbd "C-S-<right>") 'shift-right)
 (global-set-key (kbd "C-S-<left>") 'shift-left)
@@ -1380,8 +1425,8 @@ line instead."
 (define-key smartparens-mode-map (kbd "<M-backspace>") nil)
 (global-set-key (kbd "C-s-b") 'switch-default-buffer)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
-(global-set-key (kbd "C-;") 'avy-goto-char)
-(global-set-key (kbd "C-'") 'avy-goto-char-2)
+(global-set-key (kbd "C-'") 'avy-goto-char)
+(global-set-key (kbd "C-\"") 'avy-goto-char-2)
 (global-set-key (kbd "M-g M-g") 'avy-goto-line)
 (global-set-key (kbd "C-M-;") 'avy-goto-word-or-subword-1)
 (global-set-key (kbd "M-p") 'ace-window)
@@ -1393,8 +1438,8 @@ line instead."
 ;; (global-set-key (kbd "C-c c b") 'copy-file-name-to-clipboard)
 
 (global-set-key (kbd "M-`") 'other-frame)
-(global-set-key (kbd "M-v") 'zz-scroll-half-page-up)
-(global-set-key (kbd "C-v") 'zz-scroll-half-page-down)
+;; (global-set-key (kbd "M-v") 'zz-scroll-half-page-up)
+;; (global-set-key (kbd "C-v") 'zz-scroll-half-page-down)
 (global-set-key (kbd "C-,") 'embrace-commander)
 (global-set-key (kbd "M-<right>") 'cycbuf-switch-to-next-buffer)
 (global-set-key (kbd "M-<left>") 'cycbuf-switch-to-previous-buffer)

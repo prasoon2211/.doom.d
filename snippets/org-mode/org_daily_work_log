@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: org_daily_work_log 
+# key: <dl
+# uuid: <dl
+# group: org-mode
+# --
+** [`(format-time-string "%Y-%m-%d %a")`]
+*** Log
+**** Morning
+$0
+*** Todo

@@ -301,7 +301,7 @@
         org-download-screenshot-method "screencapture -i %s"
         org-journal-date-prefix "#+TITLE: "
         org-journal-file-format "%Y-%m-%d.org"
-        org-journal-dir "~/Documents/org/zettelkasten"
+        org-journal-dir "~/Documents/org/journals"
         org-journal-date-format "%A, %d %B %Y"
         ;; org-todo-state-tags-triggers '(("DONE" ("ARCHIVE" . t))
         ;;                                ("CANCELLED" ("ARCHIVE" . t)))
@@ -351,17 +351,17 @@
                   '(org-verbatim :height 0.8)
                   )
                 (setq display-line-numbers nil)
-                ;; (setq org-latex-create-formula-image-program 'imagemagick); install imagemagick and pdflatex
-                (setq org-preview-latex-default-process'dvisvgm) ; See Org-Mode Zettel under Latex
-                (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
+                ;; (setq org-preview-latex-default-process'dvipng); install imagemagick and pdflatex
+                (setq org-preview-latex-default-process 'dvisvgm) ; See Org-Mode Zettel under Latex
+                (setq org-format-latex-options (plist-put org-format-latex-options :scale 1))
                 (setq org-special-ctrl-a/e t)
                 (setq org-capture-templates
                       `(("t" "Todo" entry (file+headline ,(f-join org-directory "tasks.org") "Captured Tasks")
                          "* TODO %?\n%U" :empty-lines 1)
                         ("T" "Todo from clipboard" entry (file+headline ,(f-join org-directory "tasks.org") "Captured Tasks")
                          "* TODO %?\n%U  %c" :empty-lines 1)
-                        ("j" "Journal" entry (file+datetree ,(f-join org-directory "journal.org"))
-                         "* %U %?" :empty-lines 1)
+                        ("j" "Journal" plain (file ,(f-join org-journal-dir (concat (format-time-string "%Y-%m-%d") ".org")))
+                         "** %<%H:%M>\n%?" :empty-lines 1)
                         ("n" "Note" entry (file+headline ,(f-join org-directory "inbox.org") "Notes")
                          "* NOTE %U %?" :empty-lines 1)
                         ("N" "Note with Clipboard" entry (file+headline ,(f-join org-directory "inbox.org") "Notes")
@@ -398,6 +398,10 @@
                 (setq-local company-idle-delay 0.5
                             company-minimum-prefix-length 1)))
   :preface
+  (defun get-journal-file-today ()
+    "Return filename for today's journal entry."
+    (let ((daily-name (format-time-string "%Y-%m-%d")))
+      (expand-file-name (concat org-journal-dir daily-name))))
   (defun init-org-prettify-syntax ()
     "Prettify syntax with symbols."
     (dolist (symbol '(("#+title:" . ?⋮)
@@ -477,7 +481,8 @@
                      (writeroom-mode)
                      (setq writeroom-width 70)
                      (setq display-line-numbers nil)
-                     (markdown-toggle-markup-hiding)
+                     ;; (markdown-toggle-markup-hiding)
+                     (markdown-toggle-url-hiding)
                      (font-lock-add-keywords 'markdown-mode
                                              '(("^ *\\([-]\\) "
                                                 (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))

@@ -293,6 +293,36 @@
 (map! :after treemacs
       "M-0" 'treemacs-select-window)
 
+;; (use-package! writeroom-mode
+;;   :init
+;;   (setq writeroom-global-effects nil)
+;;   (setq writeroom-maximize-window nil)
+;;   (advice-add #'text-scale-adjust :after #'visual-fill-column-adjust)
+;;   :hook
+;;   (writeroom-mode . (lambda (
+;;                         (text-scale-set 2)
+;;                         (visual-fill-column-adjust)))))
+
+(use-package! mixed-pitch
+  :config
+  ;; (advice-add #'text-scale-adjust :after #'visual-fill-column-adjust)
+  (pushnew! mixed-pitch-fixed-pitch-faces
+            'org-date
+            'org-special-keyword
+            'org-property-value
+            'org-tag
+            'org-todo-keyword-todo
+            'org-todo-keyword-habt
+            'org-todo-keyword-done
+            'org-todo-keyword-wait
+            'org-todo-keyword-kill
+            'org-todo-keyword-outd
+            'org-todo
+            'org-done
+            'font-lock-comment-face
+            'line-number
+            'line-number-current-line))
+
 ;; ===================== ORG STUFF==================
 (use-package! org 
   :init
@@ -300,7 +330,7 @@
         org-agenda-files '("~/Documents/org/someday.org" "~/Documents/org/reminders.org" "~/Documents/org/inbox.org" "~/Documents/org/tasks.org" "~/Documents/org/gcal.org")
         org-download-screenshot-method "screencapture -i %s"
         org-journal-date-prefix "#+TITLE: "
-        org-journal-file-format "%Y-%m-%d.org"
+
         org-journal-dir "~/Documents/org/journals"
         org-journal-date-format "%A, %d %B %Y"
         ;; org-todo-state-tags-triggers '(("DONE" ("ARCHIVE" . t))
@@ -321,10 +351,10 @@
          ("C-c h" . org-toggle-heading)
          ("C-'" . nil))
   :hook
-  (org-mode . writeroom-mode)
   (org-mode . init-org-prettify-syntax)
   (org-mode . init-org-prettify-task-symbols)
   ;; (advice-add #'org-set-tags-command :around #'org-set-tags-command-multiple)
+  (org-mode . (lambda () (text-scale-set 2)))
   (org-mode . (lambda ()
                 (prettify-symbols-mode 1)
                 (visual-line-mode)
@@ -478,8 +508,8 @@
   :hook
   (markdown-mode . (lambda ()
                      (visual-line-mode)
-                     (writeroom-mode)
-                     (setq writeroom-width 70)
+                     ;; (writeroom-mode)
+                     ;; (setq writeroom-width 70)
                      (setq display-line-numbers nil)
                      ;; (markdown-toggle-markup-hiding)
                      (markdown-toggle-url-hiding)

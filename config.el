@@ -219,7 +219,7 @@
     ("w" helm-toggle-resplit-and-swap-windows)
     ("f" helm-follow-mode)))
 
-(setq doom-theme 'doom-nord-light)
+;; (setq doom-theme 'doom-nord-light)
 (doom-themes-org-config)
 
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -293,55 +293,69 @@
 (map! :after treemacs
       "M-0" 'treemacs-select-window)
 
-;; (use-package! writeroom-mode
-;;   :init
-;;   (setq writeroom-global-effects nil)
-;;   (setq writeroom-maximize-window nil)
-;;   (advice-add #'text-scale-adjust :after #'visual-fill-column-adjust)
-;;   :hook
-;;   (writeroom-mode . (lambda (
-;;                         (text-scale-set 2)
-;;                         (visual-fill-column-adjust)))))
-
-(use-package! mixed-pitch
-  :config
-  ;; (advice-add #'text-scale-adjust :after #'visual-fill-column-adjust)
-  (pushnew! mixed-pitch-fixed-pitch-faces
-            'org-date
-            'org-special-keyword
-            'org-property-value
-            'org-tag
-            'org-todo-keyword-todo
-            'org-todo-keyword-habt
-            'org-todo-keyword-done
-            'org-todo-keyword-wait
-            'org-todo-keyword-kill
-            'org-todo-keyword-outd
-            'org-todo
-            'org-done
-            'font-lock-comment-face
-            'line-number
-            'line-number-current-line))
-
 ;; ===================== ORG STUFF==================
-(use-package! org 
+(defun get-journal-file-today ()
+  "Return filename for today's journal entry."
+  (f-join org-journal-dir (concat (format-time-string "%Y_%m_%d") ".org")))
+(use-package! org
   :init
-  (setq org-directory "~/Documents/org"
-        org-agenda-files '("~/Documents/org/someday.org" "~/Documents/org/reminders.org" "~/Documents/org/inbox.org" "~/Documents/org/tasks.org" "~/Documents/org/gcal.org")
-        org-download-screenshot-method "screencapture -i %s"
-        org-journal-date-prefix "#+TITLE: "
-
-        org-journal-dir "~/Documents/org/journals"
-        org-journal-date-format "%A, %d %B %Y"
-        ;; org-todo-state-tags-triggers '(("DONE" ("ARCHIVE" . t))
-        ;;                                ("CANCELLED" ("ARCHIVE" . t)))
-        org-indent-mode-turns-on-hiding-stars t
-        org-pretty-entities t
-        writeroom-width 70)
-
   (require 'f)
   (require 'ox-md)
   (require 'ox-gfm nil t)
+  (setq org-directory "~/Documents/org"
+        org-agenda-files '("~/Documents/org/someday.org"
+                           "~/Documents/org/reminders.org"
+                           "~/Documents/org/inbox.org"
+                           "~/Documents/org/tasks.org"
+                           "~/Documents/org/gcal.org")
+        org-download-screenshot-method "screencapture -i %s"
+        org-journal-date-prefix "#+TITLE: "
+        org-journal-dir "~/Documents/org/journals"
+        org-journal-date-format "%A, %d %B %Y"
+        org-journal-file-format "%Y_%m_%d.org"
+        org-indent-mode-turns-on-hiding-stars t
+        org-pretty-entities t
+        writeroom-width 70
+        org-startup-indented t
+        org-indent-indentation-per-level 2
+        org-hide-leading-stars t
+        org-hide-emphasis-markers t
+        org-src-fontify-natively t
+        org-ellipsis " 🔽 "
+        show-trailing-whitespace nil
+        org-startup-with-inline-images t
+        org-M-RET-may-split-line t
+        org-edit-src-content-indentation 0
+        org-archive-location (f-join org-directory "archive.org::")
+        org-preview-latex-default-process 'dvisvgm
+        org-format-latex-options (plist-put org-format-latex-options :scale 1)
+        org-special-ctrl-a/e t
+        org-image-actual-width nil)
+
+  (setq org-todo-keywords '((sequence "TODO(t)" "NEXT(n)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)" "CANCELED(c)")))
+  (setq org-list-demote-modify-bullet
+        (quote (("+" . "-")
+                ("-" . "+")
+                ("*" . "-")
+                ("1." . "-")
+                ("1)" . "-")
+                ("A)" . "-")
+                ("B)" . "-")
+                ("a)" . "-")
+                ("b)" . "-")
+                ("A." . "-")
+                ("B." . "-")
+                ("a." . "-")
+                ("b." . "-"))))
+  (custom-set-faces!
+    `(org-roam-link
+      :inherit default
+      :foreground ,(face-attribute 'link :foreground)
+      :box (:color ,(face-attribute 'link :foreground) :style released-button)
+      :height 1.0)
+    '(org-meta-line :inherit default :height 0.7)
+    '(org-code :inherit default :height 0.8)
+    '(org-verbatim :inherit default :height 0.8))
 
   :bind (:map org-mode-map
          ("M-'" . ispell-word)
@@ -349,89 +363,56 @@
          ("C-c c n" . now)
          ("<C-s-return>" . insert-next-heading-and-timestamp)
          ("C-c h" . org-toggle-heading)
-         ("C-'" . nil))
+         ("C-'" . nil)
+         ("H-w" . writeroom-mode))
+  ;; (define-key org-mode-map (kbd "C-c C-l") 'org-insert-link)
+
   :hook
+  (org-mode . writeroom-mode)
   (org-mode . init-org-prettify-syntax)
   (org-mode . init-org-prettify-task-symbols)
   ;; (advice-add #'org-set-tags-command :around #'org-set-tags-command-multiple)
-  (org-mode . (lambda () (text-scale-set 2)))
   (org-mode . (lambda ()
-                (prettify-symbols-mode 1)
+                ;; (prettify-symbols-mode 1)
                 (visual-line-mode)
-                (setq org-startup-indented t
-                      org-indent-indentation-per-level 2
-                      org-hide-leading-stars t
-                      org-hide-emphasis-markers t
-                      org-src-fontify-natively t
-                      org-ellipsis " 🔽 "
-                      show-trailing-whitespace nil
-                      org-startup-with-inline-images t
-                      org-M-RET-may-split-line t)
-                (setq org-archive-location (f-join org-directory "archive.org::"))
                 (org-indent-mode)
-                (setq org-edit-src-content-indentation 0)
-                ;; :box (:line-width (1 . 1) :color ,(face-attribute 'link :foreground) :style released-button)
-                (custom-set-faces!
-                  `(org-roam-link
-                    :foreground ,(face-attribute 'link :foreground)
-                    :box (:color ,(face-attribute 'link :foreground) :style released-button)
-                    :height 1.0)
-                  '(org-meta-line :height 0.7)
-                  '(org-code :height 0.8)
-                  '(org-verbatim :height 0.8)
-                  )
                 (setq display-line-numbers nil)
-                ;; (setq org-preview-latex-default-process'dvipng); install imagemagick and pdflatex
-                (setq org-preview-latex-default-process 'dvisvgm) ; See Org-Mode Zettel under Latex
-                (setq org-format-latex-options (plist-put org-format-latex-options :scale 1))
-                (setq org-special-ctrl-a/e t)
-                (setq org-capture-templates
-                      `(("t" "Todo" entry (file+headline ,(f-join org-directory "tasks.org") "Captured Tasks")
-                         "* TODO %?\n%U" :empty-lines 1)
-                        ("T" "Todo from clipboard" entry (file+headline ,(f-join org-directory "tasks.org") "Captured Tasks")
-                         "* TODO %?\n%U  %c" :empty-lines 1)
-                        ("j" "Journal" plain (file ,(f-join org-journal-dir (concat (format-time-string "%Y-%m-%d") ".org")))
-                         "** %<%H:%M>\n%?" :empty-lines 1)
-                        ("n" "Note" entry (file+headline ,(f-join org-directory "inbox.org") "Notes")
-                         "* NOTE %U %?" :empty-lines 1)
-                        ("N" "Note with Clipboard" entry (file+headline ,(f-join org-directory "inbox.org") "Notes")
-                         "* NOTE %U %?\n %c" :empty-lines 1)
-                        ("r" "Reading List" entry (file+headline ,(f-join org-directory "zettelkasten" "20200421084542-reading_list.org") "New Entries")
-                         "* %U\nType: %?\nLink: \nDescription: " :empty-lines 1)
-                        ("w" "Work Item" plain (file ,(f-join org-directory "work" "notes.org"))
-                         "- [ ] %?")))
-                (setq org-todo-keywords '((sequence "TODO(t)" "NEXT(n)" "IN-PROGRESS(p)" "WAITING(w)" "|" "DONE(d)" "CANCELED(c)")))
-                ;; (setq org-image-actual-width (/ (display-pixel-width) 3))
-                (setq org-image-actual-width nil)
                 (setq header-line-format " ")
                 (setq line-spacing 0.1)
-                (setq org-list-demote-modify-bullet
-                      (quote (("+" . "-")
-                              ("-" . "+")
-                              ("*" . "-")
-                              ("1." . "-")
-                              ("1)" . "-")
-                              ("A)" . "-")
-                              ("B)" . "-")
-                              ("a)" . "-")
-                              ("b)" . "-")
-                              ("A." . "-")
-                              ("B." . "-")
-                              ("a." . "-")
-                              ("b." . "-"))))
-                (font-lock-add-keywords 'org-mode
+                (font-lock-add-keywords nil ;;'org-mode
                                         '(("^ *\\([-]\\) "
                                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "•"))))))
-                (font-lock-add-keywords 'org-mode
+                (font-lock-add-keywords nil ;;'org-mode
                                         '(("^ *\\([+]\\) "
                                            (0 (prog1 () (compose-region (match-beginning 1) (match-end 1) "◦"))))))
                 (setq-local company-idle-delay 0.5
-                            company-minimum-prefix-length 1)))
+                            company-minimum-prefix-length 1)
+            (org-babel-do-load-languages
+             'org-babel-load-languages
+             '((emacs-lisp . t)
+               (python . t)
+               (R . t)))
+            (setq org-capture-templates
+                  `(("t" "Todo" entry (file+headline ,(f-join org-directory "tasks.org") "Captured Tasks")
+                     "* TODO %?\nSCHEDULED: <%<%Y-%m-%d %a>>\n%U" :empty-lines 1)
+                    ("T" "Todo from clipboard" entry (file+headline ,(f-join org-directory "tasks.org") "Captured Tasks")
+                     "* TODO %?\nSCHEDULED: <%<%Y-%m-%d %a>>\n%U  %c" :empty-lines 1)
+                    ;; ("j" "Journal" plain (file (get-journal-file-today)) ;; TODO Fix
+                    ("j" "Journal" plain (file
+                                          (lambda () (expand-file-name
+                                             (concat org-journal-dir "/" (format-time-string "%Y_%m_%d") ".org"))))
+                     "** %<%H:%M>\n%?" :empty-lines 1)
+                    ("n" "Note" entry (file+headline ,(f-join org-directory "inbox.org") "Notes")
+                     "* NOTE %U %?" :empty-lines 1)
+                    ("N" "Note with Clipboard" entry (file+headline ,(f-join org-directory "inbox.org") "Notes")
+                     "* NOTE %U %?\n %c" :empty-lines 1)
+                    ("r" "Reading List" entry (file+headline
+                                               ,(f-join org-directory "zettelkasten" "20200421084542-reading_list.org")
+                                               "New Entries")
+                     "* %U\nType: %?\nLink: \nDescription: " :empty-lines 1)
+                    ("w" "Work Item" plain (file ,(f-join org-directory "work" "notes.org"))
+                     "- [ ] %?")))))
   :preface
-  (defun get-journal-file-today ()
-    "Return filename for today's journal entry."
-    (let ((daily-name (format-time-string "%Y-%m-%d")))
-      (expand-file-name (concat org-journal-dir daily-name))))
   (defun init-org-prettify-syntax ()
     "Prettify syntax with symbols."
     (dolist (symbol '(("#+title:" . ?⋮)
@@ -490,20 +471,20 @@
     "Goto previous heading and insert a new heading with current timestamp"
     (interactive)
     (org-previous-visible-heading 1)
-    (org-meta-return)
+    (org-insert-heading-respect-content)
     (now)
     (newline)))
 
 
 (use-package! markdown-mode
   :init
-  (custom-set-faces!
-    '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
-    '(markdown-header-face-2 :height 1.15 :weight bold       :inherit markdown-header-face)
-    '(markdown-header-face-3 :height 1.08 :weight bold       :inherit markdown-header-face)
-    '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
-    '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
-    '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
+  ;; (custom-set-faces!
+  ;;   '(markdown-header-face-1 :height 1.25 :weight extra-bold :inherit markdown-header-face)
+  ;;   '(markdown-header-face-2 :height 1.15 :weight bold       :inherit markdown-header-face)
+  ;;   '(markdown-header-face-3 :height 1.08 :weight bold       :inherit markdown-header-face)
+  ;;   '(markdown-header-face-4 :height 1.00 :weight bold       :inherit markdown-header-face)
+  ;;   '(markdown-header-face-5 :height 0.90 :weight bold       :inherit markdown-header-face)
+  ;;   '(markdown-header-face-6 :height 0.75 :weight extra-bold :inherit markdown-header-face))
   :bind (:map markdown-mode-map ("s-h" . dh-hydra-markdown-mode/body))
   :hook
   (markdown-mode . (lambda ()
@@ -597,6 +578,7 @@ Links, footnotes  C-c C-a    _L_: link          _U_: uri        _F_: footnote   
                ("s-o l" . org-cliplink)
                ("s-o a" . org-agenda)
                ("s-o c" . org-capture)
+               ("s-o j" . org-journal-open-current-journal-file)
                ;; ("C-M-i" . company-capf)
                )
               :map org-mode-map
@@ -707,7 +689,7 @@ https://github.com/abo-abo/org-download/commit/137c3d2aa083283a3fc853f9ecbbc0303
   )
 
 (defun my/org-download-file-from-ring ()
-  "Gets URL at point and it it begins with http/https or is a valid filepath
+  "Gets URL at point and if it begins with http/https or is a valid filepath
 then the file is moved to resources/filename/<file>"
   (my/org-download-attach-file
    (replace-regexp-in-string "\n+$" "" (current-kill 0))))
@@ -1411,7 +1393,7 @@ line instead."
 (setq magit-last-seen-setup-instructions "1.4.0")
 
 (fset 'switch-default-buffer
-      [?\C-x ?b return])
+      [?\s-b return])
 
 (fset 'delete-whitespace-around-point
       "\334 ")

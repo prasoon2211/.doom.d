@@ -57,6 +57,7 @@
 (package! company-statistics)
 (package! cycbuf)
 (package! emojify)
+(package! jupyter)
 (package! f)
 (package! fira-code-mode)
 (package! helm-ag)
@@ -70,6 +71,7 @@
 (package! sublimity)
 (package! writeroom-mode)
 
+(package! org-cliplink)
 (package! org-download)
 (package! org-fragtog)
 (package! org-journal)
@@ -83,6 +85,6 @@
   :recipe (:host github :repo "org-roam/org-roam"))
 (package! org-roam-server
   :recipe (:host github :repo "org-roam/org-roam-server"))
-(package! writeroom-mode)
-(package! olivetti)
-(package! mixed-pitch :pin "beb23e85f6073a930f7338a78bd186e3090abdd7")
+(package! solaire-mode :disable t)
+
+(package! yaml-mode)

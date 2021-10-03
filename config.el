@@ -1,4 +1,4 @@
-;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
+;;; $DIR/config.el -*- lexical-binding: t; -*-
 
 ;; Place your private configuration here! Remember, you do not need to run 'doom
 ;; sync' after modifying this file!
@@ -10,22 +10,24 @@
   (setq mac-right-option-modifier 'hyper)
   (global-set-key (kbd "s-<backspace>") (kbd "M-DEL")) ;; Karbiner maps M-Del to s-Del and vice vesa
   )
+
+;; (global-fira-code-mode)
 (setq windmove-wrap-around t)
 (add-to-list 'initial-frame-alist '(fullscreen . maximized))
 (prefer-coding-system       'utf-8)
 (set-default-coding-systems 'utf-8)
 (set-terminal-coding-system 'utf-8)
+
 (set-keyboard-coding-system 'utf-8)
 (set-selection-coding-system 'utf-8)
 (setq default-buffer-file-coding-system 'utf-8)
 (setq locale-coding-system 'utf-8)
-;; (setq +pretty-code-enabled-modes )
-
+;; (setq +pretty-code-enabled-modes '(not python-mode))
 
 (delete-selection-mode 1)
 (setq tab-always-indent t)
 (mouse-wheel-mode t)
-;; (global-hl-line-mode)
+(global-hl-line-mode)
 (column-number-mode 1) ;; Show column-number in the mode line
 (menu-bar-mode -1)
 (show-paren-mode 1)
@@ -72,6 +74,207 @@
 ;;                                  (company-dabbrev-code company-gtags company-etags)
 ;;                                  (company-abbrev company-dabbrev)))
 
+;; stripe stuff
+;;;;;;;;;;;;;;;;;;
+(defvar devbox-machine (shell-command-to-string "/usr/local/bin/pay show-host"))
+(defvar stripe-username "prasoon")
+
+
+(setq lsp-prefer-flymake :none)
+(setq lsp-log-io t)
+(setq lsp-enable-snippet nil)
+
+(defun activate-pay-server-sorbet-p (filename mode)
+  (and
+   (string-prefix-p (expand-file-name "~/stripe/pay-server")
+                    filename)
+   (or (eq major-mode 'ruby-mode) (eq major-mode 'enh-ruby-mode))))
+
+(use-package! lsp
+  :commands lsp-register-client)
+
+;; Configure the connection to Sorbet
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection '("pay" "exec" "scripts/bin/typecheck" "--lsp" "--enable-all-experimental-lsp-features"))
+                  :major-modes '(ruby-mode enh-ruby-mode)
+                  :priority 25
+                  :activation-fn 'activate-pay-server-sorbet-p
+                  :server-id 'stripe-sorbet-lsp))
+
+(defun my/use-eslint-from-node-modules ()
+  (let ((eslint (get-eslint-executable)))
+    (when (and eslint (file-executable-p eslint))
+      (setq flycheck-javascript-eslint-executable eslint))))
+
+(use-package! web-mode
+  :init
+  (defun web-mode-customization ()
+    "Customization for web-mode."
+    (setq web-mode-markup-indent-offset 2)
+    (setq web-mode-attr-indent-offset 2)
+    (setq web-mode-css-indent-offset 2)
+    (setq web-mode-code-indent-offset 2)
+    (setq web-mode-enable-auto-pairing t)
+    (setq web-mode-enable-css-colorization t)
+    (add-hook 'before-save-hook 'delete-trailing-whitespace nil 'local))
+  (add-hook 'web-mode-hook 'web-mode-customization)
+
+  :mode ("\\.html?\\'" "\\.erb\\'" "\\.hbs\\'"
+         "\\.jsx?\\'" "\\.json\\'" "\\.s?css\\'"
+         "\\.less\\'" "\\.sass\\'"))
+(defun get-eslint-executable ()
+  (let ((root (locate-dominating-file
+                (or (buffer-file-name) default-directory)
+                "package.json")))
+    (and root
+         (expand-file-name "node_modules/eslint/bin/eslint.js"
+                           root))))
+
+(defun my/use-eslint-from-node-modules ()
+  (let ((eslint (get-eslint-executable)))
+    (when (and eslint (file-executable-p eslint))
+      (setq flycheck-javascript-eslint-executable eslint))))
+
+(use-package! company-flow
+  :config
+  (add-to-list 'company-backends 'company-flow))
+
+(defun get-flow-executable ()
+  (let ((root (locate-dominating-file
+                (or (buffer-file-name) default-directory)
+                "package.json")))
+    (and root
+         (expand-file-name "node_modules/flow-bin/cli.js"
+                           root))))
+
+(defun my/use-flow-from-node-modules ()
+  (let ((flow (get-flow-executable)))
+    (when (and flow (file-exists-p flow))
+      (setq flycheck-javascript-flow-executable flow))))
+
+(use-package! flycheck-flow)
+
+(defun enable-minor-mode (my-pair)
+  (if (buffer-file-name)
+    (if (string-match (car my-pair) buffer-file-name)
+      (funcall (cdr my-pair)))))
+
+(use-package! prettier-js
+  :init
+  (add-hook 'web-mode-hook #'(lambda () (enable-minor-mode '("\\.jsx?\\'" . prettier-js-mode)))))
+
+(use-package! projectile
+  :init
+  (setq projectile-indexing-method 'alien)
+  (setq projectile-use-git-grep t)
+  (setq projectile-tags-command "/usr/local/bin/ctags --exclude=node_modules --exclude=admin --exclude=.git --exclude=frontend --exclude=home --exclude=**/*.js -Re -f \"%s\" %s")
+
+  :config
+  (projectile-global-mode))
+
+(use-package! flycheck
+  :init
+  (setq flycheck-ruby-rubocop-executable (format "/Users/%s/bin/delefate_rubocop" stripe-username))
+  (setq flycheck-ruby-executable (format "/Users/%s/.rbenv/shims/ruby" stripe-username))
+
+  :config
+  (setq-default flycheck-disabled-checkers
+                (append flycheck-disabled-checkers
+                        '(javascript-jshint)
+                        '(ruby-rubylint)
+                        '(json-jsonlist)
+                        '(emacs-lisp-checkdoc)))
+
+  (add-hook 'flycheck-mode-hook #'my/use-eslint-from-node-modules)
+  (add-hook 'flycheck-mode-hook #'my/use-flow-from-node-modules)
+
+  ;; use eslint and flow with web-mode for jsx files
+  (flycheck-add-mode 'javascript-eslint 'web-mode)
+  (flycheck-add-mode 'javascript-flow 'web-mode)
+  (flycheck-add-next-checker 'javascript-flow '(t . javascript-eslint))
+  (global-flycheck-mode))
+
+(use-package! ruby-mode
+  :config
+  (defun my-ruby-mode-hook ()
+    (set-fill-column 80)
+    (add-hook 'before-save-hook 'delete-trailing-whitespace nil 'local)
+    (setq ruby-insert-encoding-magic-comment nil))
+  (add-hook! 'ruby-mode-hook 'my-ruby-mode-hook)
+  (add-hook! 'ruby-mode-hook #'lsp)
+  (add-hook! 'enh-ruby-mode-hook #'lsp)
+  )
+
+;; Functions
+(defun insert-jira (project jiranum)
+  (interactive (concat "M" project "-"))
+  (insert (format "https://jira.corp.stripe.com/browse/ATLASENG-%s"
+                  jiranum)))
+(defun open-pr ()
+  (interactive)
+  (let ((current-branch (magit-get-current-branch))
+        (remote-url "git@git.corp.stripe.com:stripe-internal/pay-server"))
+    (browse-url (remote-url-to-github-pr remote-url current-branch))))
+
+(defun remote-url-to-github-pr (remote-url current-branch)
+  (let ((suffix (nth 1 (split-string remote-url ":"))))
+    (format "https://git.corp.stripe.com/%s/compare/%s?expand=1" suffix current-branch)))
+
+(defun run-payserver-test-line ()
+  (interactive)
+  (let ((cur-line (+ 1 (count-lines (point-min) (point)))))
+    (run-payserver-tests cur-line)))
+
+(defun run-payserver-test-file ()
+  (interactive)
+  (run-payserver-tests nil))
+
+(defun run-payserver-tests (cur-line)
+  (run-payserver-command-in-buffer "*payserver-tests*"
+   (build-test-args (buffer-file-name) cur-line)))
+
+(defun build-test-args (full-filename line)
+  (let* ((filename (replace-regexp-in-string "^.*pay-server/" "" full-filename))
+         (file-line-args (if line
+                             (list "-l" (number-to-string line) "--show-output")
+                           (list))))
+    (append (list "/usr/local/bin/pay" "test" filename) file-line-args)))
+
+(defun view-payserver-test-log ()
+  (interactive)
+  (let ((default-directory (build-payserver-command-url))
+        (log-file (replace-regexp-in-string "See \\(.*\\) for details." "\\1" (thing-at-point 'line t))))
+    (find-file (format "/ssh:%s:%s" devbox-machine log-file))))
+(defun build-payserver-command-url (&optional subdirectory)
+  (format "~/stripe/pay-server%s" (if subdirectory subdirectory "")))
+
+(defun run-payserver-command-in-buffer (buffer-name command-args)
+  (let ((default-directory (build-payserver-command-url))
+        (cur-buffer (current-buffer)))
+    (progn
+      (other-window 1)
+      (switch-to-buffer buffer-name)
+      (set-buffer (get-buffer buffer-name))
+      (erase-buffer) ; Clear out test buffer before running
+      (goto-char (point-min))
+      (insert (concat (mapconcat 'identity command-args " ") "\n"))
+      (set-buffer cur-buffer)
+      (apply 'start-file-process buffer-name (get-buffer buffer-name) command-args))))
+
+(defun run-payserver-command (command-args)
+  (let ((default-directory (build-payserver-command-url)))
+    (shell-command-to-string (join " " command-args))))
+
+(defun join (sep lst)
+  (mapconcat 'identity lst sep))
+
+(global-set-key [S-f5] 'run-payserver-test-line)
+(global-set-key [f5] 'run-payserver-test-file)
+
+;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;
+
+
 (after! company
   (require 'company-emoji)
   (setq company-tooltip-align-annotations t)
@@ -116,7 +319,7 @@
 (require 'smartparens-config)
 
 (use-package! helm
-  :commands (helm-subr-native-elisp-p)
+  :commands (helm-M-x)
   :hook
   ;; Save current position to mark ring when jumping to a different place
   (helm-goto-line-before . helm-save-current-pos-to-mark-ring)
@@ -149,7 +352,7 @@
   :config
   (when (executable-find "curl")
     (setq helm-google-suggest-use-curl-p t))
-  (helm-gtags-mode t)
+  ;; (helm-gtags-mode t)
   (global-set-key (kbd "C-c c h") 'helm-command-prefix) ;; helm prefix key
   (global-unset-key (kbd "C-x c"))
   (setq helm-split-window-inside-p           t ; open helm buffer inside current window, not occupy whole other window
@@ -171,7 +374,7 @@
   (setq helm-completion-in-region-fuzzy-match t)
   ;; (setq helm-mode-fuzzy-match t)
   (setq helm-boring-buffer-regexp-list (list (rx "*")))
-  (define-key helm-find-files-map (kbd "<backspace>") 'helm-find-files-up-one-level)
+  ;; (define-key helm-find-files-map (kbd "<backspace>") 'helm-find-files-up-one-level)
   (with-eval-after-load 'helm-gtags
      (define-key helm-gtags-mode-map (kbd "s-.") 'helm-gtags-find-tag)
      (define-key helm-gtags-mode-map (kbd "s->") 'helm-gtags-find-rtag)
@@ -219,7 +422,7 @@
     ("w" helm-toggle-resplit-and-swap-windows)
     ("f" helm-follow-mode)))
 
-;; (setq doom-theme 'doom-nord-light)
+(setq doom-theme 'doom-nord-light)
 (doom-themes-org-config)
 
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -297,6 +500,7 @@
 (defun get-journal-file-today ()
   "Return filename for today's journal entry."
   (f-join org-journal-dir (concat (format-time-string "%Y_%m_%d") ".org")))
+(setq org-roam-v2-ack t)
 (use-package! org
   :init
   (require 'f)
@@ -597,24 +801,24 @@ Links, footnotes  C-c C-a    _L_: link          _U_: uri        _F_: footnote   
         "C-M-i" #'company-capf)
   )
 
-(use-package! org-roam-protocol
-  :after org-protocol)
+;; (use-package! org-roam-protocol
+;;   :after org-protocol)
 
-(use-package! org-roam-server
-  :commands org-roam-server-mode
-  ;; uncomment to run server on startup
-  ;; to manually start, first switch off smartparens (smartparens-global-mode)
-  ;; :hook (org-roam-mode . org-roam-server-mode)
-  :demand
-  :init
-  (setq org-roam-server-host "127.0.0.1"
-        org-roam-server-port 8081
-        org-roam-server-export-inline-images t
-        org-roam-server-authenticate nil
-        org-roam-server-network-arrows nil
-        org-roam-server-network-label-truncate t
-        org-roam-server-network-label-truncate-length 60
-        org-roam-server-network-label-wrap-length 20))
+;; (use-package! org-roam-server
+;;   :commands org-roam-server-mode
+;;   ;; uncomment to run server on startup
+;;   ;; to manually start, first switch off smartparens (smartparens-global-mode)
+;;   ;; :hook (org-roam-mode . org-roam-server-mode)
+;;   :demand
+;;   :init
+;;   (setq org-roam-server-host "127.0.0.1"
+;;         org-roam-server-port 8081
+;;         org-roam-server-export-inline-images t
+;;         org-roam-server-authenticate nil
+;;         org-roam-server-network-arrows nil
+;;         org-roam-server-network-label-truncate t
+;;         org-roam-server-network-label-truncate-length 60
+;;         org-roam-server-network-label-wrap-length 20))
 
 
 (defun drestivo/org-download-method (link)
